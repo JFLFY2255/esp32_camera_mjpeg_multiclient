@@ -39,7 +39,8 @@
 //#define CAMERA_MODEL_ESP_EYE
 //#define CAMERA_MODEL_M5STACK_PSRAM
 //#define CAMERA_MODEL_M5STACK_WIDE
-#define CAMERA_MODEL_AI_THINKER
+//#define CAMERA_MODEL_AI_THINKER
+#define CAMERA_MODEL_GOOUUU_ESP32S3_CAM
 
 #include "camera_pins.h"
 
@@ -384,11 +385,19 @@ void handleNotFound()
 // ==== SETUP method ==================================================================
 void setup()
 {
-
   // Setup Serial connection:
   Serial.begin(115200);
   delay(1000); // wait for a second to let Serial connect
 
+  // 打印内存信息
+  Serial.printf("开始前，可用内存: %d bytes\n", ESP.getFreeHeap());
+  if(psramFound()) {
+    Serial.printf("PSRAM大小: %d bytes, 可用: %d bytes\n", 
+                ESP.getPsramSize(), ESP.getFreePsram());
+  }
+  
+  // 相机初始化前短暂延迟以稳定电源
+  delay(500);
 
   // Configure the camera
   camera_config_t config;
@@ -410,16 +419,22 @@ void setup()
   config.pin_sscb_scl = SIOC_GPIO_NUM;
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 20000000;
+  config.xclk_freq_hz = 20000000; 
   config.pixel_format = PIXFORMAT_JPEG;
 
-  // Frame parameters: pick one
-  //  config.frame_size = FRAMESIZE_UXGA;
-  //  config.frame_size = FRAMESIZE_SVGA;
-  //  config.frame_size = FRAMESIZE_QVGA;
+  // 使用最低分辨率启动
   config.frame_size = FRAMESIZE_VGA;
-  config.jpeg_quality = 12;
+  config.jpeg_quality = 12;  // 63是最低质量
   config.fb_count = 2;
+  
+  // 检查PSRAM
+  if(psramFound()) {
+    Serial.println("PSRAM 已找到，使用PSRAM存储帧缓冲区");
+    config.fb_location = CAMERA_FB_IN_PSRAM;
+  } else {
+    Serial.println("未找到PSRAM，使用DRAM");
+    config.fb_location = CAMERA_FB_IN_DRAM;
+  }
 
 #if defined(CAMERA_MODEL_ESP_EYE)
   pinMode(13, INPUT_PULLUP);
@@ -428,9 +443,10 @@ void setup()
 
   if (cam.init(config) != ESP_OK) {
     Serial.println("Error initializing the camera");
-    delay(10000);
+    delay(3000);
     ESP.restart();
   }
+  Serial.println("相机初始化成功");
 
 
   //  Configure and connect to WiFi
