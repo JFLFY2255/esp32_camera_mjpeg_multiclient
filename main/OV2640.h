@@ -1,14 +1,11 @@
 #ifndef OV2640_H_
 #define OV2640_H_
 
-#include <Arduino.h>
-#include <pgmspace.h>
-#include <stdio.h>
+#include "Arduino.h"
+#include "esp_camera.h"
 #include "esp_log.h"
 #include "esp_attr.h"
-#include "esp_camera.h"
-
-extern camera_config_t esp32cam_config, esp32cam_aithinker_config, esp32cam_ttgo_t_config, esp32cam_goouuu_s3_config;
+#include <stdio.h>
 
 class OV2640
 {
@@ -40,4 +37,4 @@ private:
     camera_fb_t *fb;
 };
 
-#endif //OV2640_H_
+#endif //OV2640_H_ 

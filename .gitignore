@@ -3,6 +3,13 @@
 # 构建输出目录
 /build/
 
+# 依赖组件目录
+/managed_components/
+/dependencies/
+
+# 重复的Arduino组件库
+/components/arduino/
+
 # Arduino IDE临时文件
 *.tmp
 *.bak
@@ -26,8 +33,10 @@
 .vscode/extensions.json
 
 # ESP-IDF特定文件
+sdkconfig
 sdkconfig.old
 sdkconfig.esp32*
+sdkconfig.default.old
 .DS_Store
 
 # 本地配置文件（可能包含密码等敏感信息）
@@ -35,11 +44,26 @@ home_wifi_multi.h
 
 # 临时和日志文件
 *.log
+*.swp
+*.swo
 
 # Cursor IDE特定文件
 .cursor/
 
+# ESP-IDF构建系统相关
+/compile_commands.json
+
 # 可能包含敏感信息的配置文件
 secrets.h
 config.h
-credentials.h 
+credentials.h
+
+# 特定的工具链生成文件
+.cproject
+.project
+.settings/
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake 
+dependencies.lock

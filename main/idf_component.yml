@@ -1,0 +1,12 @@
+## IDF Component Manager Manifest文件
+dependencies:
+  espressif/arduino-esp32:
+    version: "^3.0.2"
+    # 如果正在使用本地arduino组件，可以取消下面一行的注释并修改路径
+    # override_path: "../components/arduino"
+  espressif/esp32-camera:
+    version: "^2.0.5"
+
+  # 其他可能需要的依赖
+  idf:
+    version: ">=5.0.0" 
