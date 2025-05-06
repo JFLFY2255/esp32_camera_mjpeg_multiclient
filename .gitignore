@@ -8,7 +8,7 @@
 /dependencies/
 
 # 重复的Arduino组件库
-/components/arduino/
+/components/arduino-esp32/
 
 # Arduino IDE临时文件
 *.tmp

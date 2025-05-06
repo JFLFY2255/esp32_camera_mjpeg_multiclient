@@ -17,9 +17,7 @@
 #define PRO_CPU 0
 
 // 选择摄像头模型
-#define CAMERA_MODEL_GOOUUU_ESP32S3_CAM
-
-#include "camera_pins.h"
+#define CAMERA_MODEL CAMERA_MODEL_GOOUUU_ESP32S3_CAM
 
 // WiFi凭据
 #include "home_wifi_multi.h"
@@ -352,33 +350,8 @@ extern "C" void app_main() {
   // 相机初始化前短暂延迟以稳定电源
   delay(500);
   
-  // 配置摄像头
-  camera_config_t config;
-  config.ledc_channel = LEDC_CHANNEL_0;
-  config.ledc_timer = LEDC_TIMER_0;
-  config.pin_d0 = Y2_GPIO_NUM;
-  config.pin_d1 = Y3_GPIO_NUM;
-  config.pin_d2 = Y4_GPIO_NUM;
-  config.pin_d3 = Y5_GPIO_NUM;
-  config.pin_d4 = Y6_GPIO_NUM;
-  config.pin_d5 = Y7_GPIO_NUM;
-  config.pin_d6 = Y8_GPIO_NUM;
-  config.pin_d7 = Y9_GPIO_NUM;
-  config.pin_xclk = XCLK_GPIO_NUM;
-  config.pin_pclk = PCLK_GPIO_NUM;
-  config.pin_vsync = VSYNC_GPIO_NUM;
-  config.pin_href = HREF_GPIO_NUM;
-  config.pin_sccb_sda = SIOD_GPIO_NUM;
-  config.pin_sccb_scl = SIOC_GPIO_NUM;
-  config.pin_pwdn = PWDN_GPIO_NUM;
-  config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 20000000;
-  config.pixel_format = PIXFORMAT_JPEG;
-  
-  // 使用最低分辨率启动
-  config.frame_size = FRAMESIZE_VGA;
-  config.jpeg_quality = 12;  // 63是最低质量
-  config.fb_count = 2;
+  // 直接从OV2640类获取相机配置
+  camera_config_t config = cam.get_config(CAMERA_MODEL);
   
   // 检查PSRAM
   if(psramFound()) {
@@ -395,7 +368,7 @@ extern "C" void app_main() {
   #endif
   
   if (cam.init(config) != ESP_OK) {
-    Serial.println("Error initializing the camera");
+    Serial.println("相机初始化错误");
     delay(3000);
     ESP.restart();
   }
@@ -406,15 +379,15 @@ extern "C" void app_main() {
   
   WiFi.mode(WIFI_STA);
   WiFi.begin(SSID1, PWD1);
-  Serial.print("Connecting to WiFi");
+  Serial.print("正在连接到WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(F("."));
   }
   ip = WiFi.localIP();
-  Serial.println(F("WiFi connected"));
+  Serial.println(F("WiFi已连接"));
   Serial.println("");
-  Serial.print("Stream Link: http://");
+  Serial.print("流链接: http://");
   Serial.print(ip);
   Serial.println("/mjpeg/1");
   

@@ -5,7 +5,7 @@ idf_component_register(
     INCLUDE_DIRS 
         "."
     REQUIRES 
-        "arduino"
+        "arduino-esp32"
         "esp32-camera"
 )
 

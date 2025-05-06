@@ -2,134 +2,179 @@
 
 #define TAG "OV2640"
 
-// definitions appropriate for the ESP32-CAM devboard (and most clones)
-camera_config_t esp32cam_config{
+// 相机配置函数 - 返回特定型号的配置
+camera_config_t OV2640::get_config(CameraModel model) {
+    camera_config_t config;
+    
+    // 初始化所有属性的通用默认值
+    config.ledc_timer = LEDC_TIMER_0;
+    config.ledc_channel = LEDC_CHANNEL_0;
+    config.xclk_freq_hz = 20000000;
+    config.pixel_format = PIXFORMAT_JPEG;
+    config.frame_size = FRAMESIZE_VGA;
+    config.jpeg_quality = 12; // 0-63，数字越小质量越高
+    config.fb_count = 2;      // 如果超过1个，i2s以连续模式运行。仅用于jpeg
+    
+    // 根据不同型号配置特定的引脚
+    switch (model) {
+        case CAMERA_MODEL_ESP32CAM_DEVBOARD:
+            // 适用于ESP32-CAM开发板（和大多数克隆版）的定义
+            config.pin_pwdn = -1;
+            config.pin_reset = 15;
+            config.pin_xclk = 27;
+            config.pin_sscb_sda = 25;
+            config.pin_sscb_scl = 23;
+            config.pin_d7 = 19;
+            config.pin_d6 = 36;
+            config.pin_d5 = 18;
+            config.pin_d4 = 39;
+            config.pin_d3 = 5;
+            config.pin_d2 = 34;
+            config.pin_d1 = 35;
+            config.pin_d0 = 17;
+            config.pin_vsync = 22;
+            config.pin_href = 26;
+            config.pin_pclk = 21;
+            break;
+        
+        case CAMERA_MODEL_AI_THINKER:
+            config.pin_pwdn = 32;
+            config.pin_reset = -1;
+            config.pin_xclk = 0;
+            config.pin_sscb_sda = 26;
+            config.pin_sscb_scl = 27;
+            config.pin_d7 = 35;
+            config.pin_d6 = 34;
+            config.pin_d5 = 39;
+            config.pin_d4 = 36;
+            config.pin_d3 = 21;
+            config.pin_d2 = 19;
+            config.pin_d1 = 18;
+            config.pin_d0 = 5;
+            config.pin_vsync = 25;
+            config.pin_href = 23;
+            config.pin_pclk = 22;
+            config.ledc_timer = LEDC_TIMER_1;
+            config.ledc_channel = LEDC_CHANNEL_1;
+            break;
+        
+        case CAMERA_MODEL_TTGO_TCAMERA:
+            config.pin_pwdn = 26;
+            config.pin_reset = -1;
+            config.pin_xclk = 32;
+            config.pin_sscb_sda = 13;
+            config.pin_sscb_scl = 12;
+            config.pin_d7 = 39;
+            config.pin_d6 = 36;
+            config.pin_d5 = 23;
+            config.pin_d4 = 18;
+            config.pin_d3 = 15;
+            config.pin_d2 = 4;
+            config.pin_d1 = 14;
+            config.pin_d0 = 5;
+            config.pin_vsync = 27;
+            config.pin_href = 25;
+            config.pin_pclk = 19;
+            break;
+        
+        case CAMERA_MODEL_GOOUUU_ESP32S3_CAM:
+            config.pin_pwdn = -1;
+            config.pin_reset = -1;
+            config.pin_xclk = 15;
+            config.pin_sscb_sda = 4;
+            config.pin_sscb_scl = 5;
+            config.pin_d7 = 16;
+            config.pin_d6 = 17;
+            config.pin_d5 = 18;
+            config.pin_d4 = 12;
+            config.pin_d3 = 10;
+            config.pin_d2 = 8;
+            config.pin_d1 = 9;
+            config.pin_d0 = 11;
+            config.pin_vsync = 6;
+            config.pin_href = 7;
+            config.pin_pclk = 13;
+            break;
 
-    .pin_pwdn = -1, // FIXME: on the TTGO T-Journal I think this is GPIO 0
-    .pin_reset = 15,
+        case CAMERA_MODEL_WROVER_KIT:
+            config.pin_pwdn = -1;
+            config.pin_reset = -1;
+            config.pin_xclk = 21;
+            config.pin_sscb_sda = 26;
+            config.pin_sscb_scl = 27;
+            config.pin_d7 = 35;
+            config.pin_d6 = 34;
+            config.pin_d5 = 39;
+            config.pin_d4 = 36;
+            config.pin_d3 = 19;
+            config.pin_d2 = 18;
+            config.pin_d1 = 5;
+            config.pin_d0 = 4;
+            config.pin_vsync = 25;
+            config.pin_href = 23;
+            config.pin_pclk = 22;
+            break;
 
-    .pin_xclk = 27,
+        case CAMERA_MODEL_ESP_EYE:
+            config.pin_pwdn = -1;
+            config.pin_reset = -1;
+            config.pin_xclk = 4;
+            config.pin_sscb_sda = 18;
+            config.pin_sscb_scl = 23;
+            config.pin_d7 = 36;
+            config.pin_d6 = 37;
+            config.pin_d5 = 38;
+            config.pin_d4 = 39;
+            config.pin_d3 = 35;
+            config.pin_d2 = 14;
+            config.pin_d1 = 13;
+            config.pin_d0 = 34;
+            config.pin_vsync = 5;
+            config.pin_href = 27;
+            config.pin_pclk = 25;
+            break;
 
-    .pin_sscb_sda = 25,
-    .pin_sscb_scl = 23,
+        case CAMERA_MODEL_M5STACK_PSRAM:
+            config.pin_pwdn = -1;
+            config.pin_reset = 15;
+            config.pin_xclk = 27;
+            config.pin_sscb_sda = 25;
+            config.pin_sscb_scl = 23;
+            config.pin_d7 = 19;
+            config.pin_d6 = 36;
+            config.pin_d5 = 18;
+            config.pin_d4 = 39;
+            config.pin_d3 = 5;
+            config.pin_d2 = 34;
+            config.pin_d1 = 35;
+            config.pin_d0 = 32;
+            config.pin_vsync = 22;
+            config.pin_href = 26;
+            config.pin_pclk = 21;
+            break;
 
-    .pin_d7 = 19,
-    .pin_d6 = 36,
-    .pin_d5 = 18,
-    .pin_d4 = 39,
-    .pin_d3 = 5,
-    .pin_d2 = 34,
-    .pin_d1 = 35,
-    .pin_d0 = 17,
-    .pin_vsync = 22,
-    .pin_href = 26,
-    .pin_pclk = 21,
-    .xclk_freq_hz = 20000000,
-    .ledc_timer = LEDC_TIMER_0,
-    .ledc_channel = LEDC_CHANNEL_0,
-    .pixel_format = PIXFORMAT_JPEG,
-    // .frame_size = FRAMESIZE_UXGA, // needs 234K of framebuffer space
-    // .frame_size = FRAMESIZE_SXGA, // needs 160K for framebuffer
-    // .frame_size = FRAMESIZE_XGA, // needs 96K or even smaller FRAMESIZE_SVGA - can work if using only 1 fb
-    .frame_size = FRAMESIZE_SVGA,
-    .jpeg_quality = 12, //0-63 lower numbers are higher quality
-    .fb_count = 2       // if more than one i2s runs in continous mode.  Use only with jpeg
-};
-
-camera_config_t esp32cam_aithinker_config{
-
-    .pin_pwdn = 32,
-    .pin_reset = -1,
-
-    .pin_xclk = 0,
-
-    .pin_sscb_sda = 26,
-    .pin_sscb_scl = 27,
-
-    // Note: LED GPIO is apparently 4 not sure where that goes
-    // per https://github.com/donny681/ESP32_CAMERA_QR/blob/e4ef44549876457cd841f33a0892c82a71f35358/main/led.c
-    .pin_d7 = 35,
-    .pin_d6 = 34,
-    .pin_d5 = 39,
-    .pin_d4 = 36,
-    .pin_d3 = 21,
-    .pin_d2 = 19,
-    .pin_d1 = 18,
-    .pin_d0 = 5,
-    .pin_vsync = 25,
-    .pin_href = 23,
-    .pin_pclk = 22,
-    .xclk_freq_hz = 20000000,
-    .ledc_timer = LEDC_TIMER_1,
-    .ledc_channel = LEDC_CHANNEL_1,
-    .pixel_format = PIXFORMAT_JPEG,
-    // .frame_size = FRAMESIZE_UXGA, // needs 234K of framebuffer space
-    // .frame_size = FRAMESIZE_SXGA, // needs 160K for framebuffer
-    // .frame_size = FRAMESIZE_XGA, // needs 96K or even smaller FRAMESIZE_SVGA - can work if using only 1 fb
-    .frame_size = FRAMESIZE_SVGA,
-    .jpeg_quality = 12, //0-63 lower numbers are higher quality
-    .fb_count = 2       // if more than one i2s runs in continous mode.  Use only with jpeg
-};
-
-camera_config_t esp32cam_ttgo_t_config{
-
-    .pin_pwdn = 26,
-    .pin_reset = -1,
-
-    .pin_xclk = 32,
-
-    .pin_sscb_sda = 13,
-    .pin_sscb_scl = 12,
-
-    .pin_d7 = 39,
-    .pin_d6 = 36,
-    .pin_d5 = 23,
-    .pin_d4 = 18,
-    .pin_d3 = 15,
-    .pin_d2 = 4,
-    .pin_d1 = 14,
-    .pin_d0 = 5,
-    .pin_vsync = 27,
-    .pin_href = 25,
-    .pin_pclk = 19,
-    .xclk_freq_hz = 20000000,
-    .ledc_timer = LEDC_TIMER_0,
-    .ledc_channel = LEDC_CHANNEL_0,
-    .pixel_format = PIXFORMAT_JPEG,
-    .frame_size = FRAMESIZE_SVGA,
-    .jpeg_quality = 12, //0-63 lower numbers are higher quality
-    .fb_count = 2       // if more than one i2s runs in continous mode.  Use only with jpeg
-};
-
-// 添加 goouuu ESP32-S3-CAM 配置
-camera_config_t esp32cam_goouuu_s3_config{
-    .pin_pwdn = -1,
-    .pin_reset = -1,
-
-    .pin_xclk = 15,
-
-    .pin_sscb_sda = 4,
-    .pin_sscb_scl = 5,
-
-    .pin_d7 = 16,
-    .pin_d6 = 17,
-    .pin_d5 = 18,
-    .pin_d4 = 12,
-    .pin_d3 = 10,
-    .pin_d2 = 8,
-    .pin_d1 = 9,
-    .pin_d0 = 11,
-    .pin_vsync = 6,
-    .pin_href = 7,
-    .pin_pclk = 13,
-    .xclk_freq_hz = 20000000,
-    .ledc_timer = LEDC_TIMER_0,
-    .ledc_channel = LEDC_CHANNEL_0,
-    .pixel_format = PIXFORMAT_JPEG,
-    .frame_size = FRAMESIZE_SVGA,
-    .jpeg_quality = 12, //0-63 lower numbers are higher quality
-    .fb_count = 1       // if more than one i2s runs in continous mode.  Use only with jpeg
-};
+        case CAMERA_MODEL_M5STACK_WIDE:
+            config.pin_pwdn = -1;
+            config.pin_reset = 15;
+            config.pin_xclk = 27;
+            config.pin_sscb_sda = 22;
+            config.pin_sscb_scl = 23;
+            config.pin_d7 = 19;
+            config.pin_d6 = 36;
+            config.pin_d5 = 18;
+            config.pin_d4 = 39;
+            config.pin_d3 = 5;
+            config.pin_d2 = 34;
+            config.pin_d1 = 35;
+            config.pin_d0 = 32;
+            config.pin_vsync = 25;
+            config.pin_href = 26;
+            config.pin_pclk = 21;
+            break;
+    }
+    
+    return config;
+}
 
 void OV2640::run(void)
 {

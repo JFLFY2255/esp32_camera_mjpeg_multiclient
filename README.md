@@ -154,6 +154,10 @@ void loop() {
   
   如果开发板无法启动，尝试降低Flash频率到`40MHz`或`20MHz`
 
+- **ESP_SR库引用问题**:
+  
+  arduino-esp32中的ESP_SR.h文件中的`#include "ESP_I2S.h"`路径可能需要修改成`#include "../../ESP_I2S/src/ESP_I2S.h"`
+
 #### 6. ESP32-S3高级配置
 
 ##### 分区表配置
