@@ -378,7 +378,7 @@ extern "C" void app_main() {
   IPAddress ip;
   
   WiFi.mode(WIFI_STA);
-  WiFi.begin(SSID1, PWD1);
+  WiFi.begin(SSID, PWD);
   Serial.print("正在连接到WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);

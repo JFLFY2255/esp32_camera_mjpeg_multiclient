@@ -17,6 +17,32 @@ This is tested to work with **VLC** and **Blynk** video widget.
 - WROVER KIT
 - GOOUUU ESP32-S3-CAM
 
+## WiFi配置说明
+
+本项目使用`home_wifi_multi.h`文件存储WiFi凭据信息。出于安全考虑，该文件未包含在Git仓库中。请按照以下步骤进行配置：
+
+### 设置WiFi凭据
+
+1. 在`main`目录下找到`home_wifi_multi.h.template`模板文件
+2. 将此文件复制为`home_wifi_multi.h`
+   ```bash
+   cp main/home_wifi_multi.h.template main/home_wifi_multi.h
+   ```
+3. 编辑`home_wifi_multi.h`文件，填入您的实际WiFi信息：
+   ```cpp
+   #define SSID "你的WiFi名称"  // 修改为您的实际WiFi名称
+   #define PWD "你的WiFi密码"   // 修改为您的实际WiFi密码
+   ```
+
+### Git管理最佳实践
+
+为防止敏感信息被意外提交到版本控制系统：
+
+1. `home_wifi_multi.h`文件已添加到`.gitignore`中
+2. 请勿移除`.gitignore`中的相关条目
+3. 绝不要使用`git add -f main/home_wifi_multi.h`强制添加此文件
+4. 团队协作时，请通过其他安全渠道共享WiFi配置信息
+
 ## 关于PSRAM的设置说明
 
 ### ESP32-S3 PSRAM配置
@@ -256,4 +282,3 @@ https://github.com/arkhipenko/esp32-mjpeg-multiclient-espcam-drivers
 ###### Cooperative multitasking library:
 
 https://github.com/arkhipenko/TaskScheduler
-
