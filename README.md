@@ -182,7 +182,22 @@ void loop() {
 
 - **ESP_SR库引用问题**:
   
-  arduino-esp32中的ESP_SR.h文件中的`#include "ESP_I2S.h"`路径可能需要修改成`#include "../../ESP_I2S/src/ESP_I2S.h"`
+  若使用arduino-esp32库时遇到ESP_SR.h文件中的`#include "ESP_I2S.h"`路径问题：
+  
+  1. **问题描述**：arduino-esp32中ESP_SR.h文件包含的路径`#include "ESP_I2S.h"`可能导致编译错误
+  
+  2. **解决方案**：在sdkconfig中设置`CONFIG_ARDUINO_SELECTIVE_COMPILATION=n`
+     
+     通过禁用选择性编译，系统将包含所有Arduino库，从而解决库之间的路径引用问题
+     
+  3. **设置方法**：
+     - 使用`idf.py menuconfig`命令
+     - 导航至`Component config → Arduino Configuration`
+     - 取消选择`Enable selective Arduino library compilation`选项
+     - 或直接在sdkconfig文件中添加`CONFIG_ARDUINO_SELECTIVE_COMPILATION=n`
+
+  4. **替代方法**：如果需要保留选择性编译，也可以手动修改ESP_SR.h文件，将包含路径改为
+     `#include "../../ESP_I2S/src/ESP_I2S.h"`
 
 #### 6. ESP32-S3高级配置
 
