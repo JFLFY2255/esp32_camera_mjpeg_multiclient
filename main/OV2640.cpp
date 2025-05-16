@@ -9,8 +9,8 @@ camera_config_t OV2640::get_config(CameraModel model) {
     // 初始化所有属性的通用默认值
     config.ledc_timer = LEDC_TIMER_0;
     config.ledc_channel = LEDC_CHANNEL_0;
-    // config.pixel_format = PIXFORMAT_RGB565;
-    config.pixel_format = PIXFORMAT_JPEG;
+    config.pixel_format = PIXFORMAT_RGB565;
+    // config.pixel_format = PIXFORMAT_JPEG;
     config.xclk_freq_hz = config.pixel_format == PIXFORMAT_JPEG ? 20000000 : 16000000;
     // config.frame_size = FRAMESIZE_VGA;
     config.frame_size = FRAMESIZE_QQVGA;

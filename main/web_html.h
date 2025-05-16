@@ -19,7 +19,7 @@ const char html[] = R"X(
 </head>
 <body>
   <div id="container">
-    <h1>ESP32 Camera Stream</h1>
+    <h1>Camera Stream Demo</h1>
     <div>
       <button onclick="showJPEG()">Show JPEG</button>
       <button onclick="showRGB565()">Show RGB565</button>
