@@ -9,9 +9,11 @@ camera_config_t OV2640::get_config(CameraModel model) {
     // 初始化所有属性的通用默认值
     config.ledc_timer = LEDC_TIMER_0;
     config.ledc_channel = LEDC_CHANNEL_0;
-    config.xclk_freq_hz = 20000000;
+    // config.pixel_format = PIXFORMAT_RGB565;
     config.pixel_format = PIXFORMAT_JPEG;
-    config.frame_size = FRAMESIZE_VGA;
+    config.xclk_freq_hz = config.pixel_format == PIXFORMAT_JPEG ? 20000000 : 16000000;
+    // config.frame_size = FRAMESIZE_VGA;
+    config.frame_size = FRAMESIZE_QQVGA;
     config.jpeg_quality = 12; // 0-63，数字越小质量越高
     config.fb_count = 2;      // 如果超过1个，i2s以连续模式运行。仅用于jpeg
     
@@ -22,8 +24,8 @@ camera_config_t OV2640::get_config(CameraModel model) {
             config.pin_pwdn = -1;
             config.pin_reset = 15;
             config.pin_xclk = 27;
-            config.pin_sscb_sda = 25;
-            config.pin_sscb_scl = 23;
+            config.pin_sccb_sda = 25;
+            config.pin_sccb_scl = 23;
             config.pin_d7 = 19;
             config.pin_d6 = 36;
             config.pin_d5 = 18;
@@ -41,8 +43,8 @@ camera_config_t OV2640::get_config(CameraModel model) {
             config.pin_pwdn = 32;
             config.pin_reset = -1;
             config.pin_xclk = 0;
-            config.pin_sscb_sda = 26;
-            config.pin_sscb_scl = 27;
+            config.pin_sccb_sda = 26;
+            config.pin_sccb_scl = 27;
             config.pin_d7 = 35;
             config.pin_d6 = 34;
             config.pin_d5 = 39;
@@ -62,8 +64,8 @@ camera_config_t OV2640::get_config(CameraModel model) {
             config.pin_pwdn = 26;
             config.pin_reset = -1;
             config.pin_xclk = 32;
-            config.pin_sscb_sda = 13;
-            config.pin_sscb_scl = 12;
+            config.pin_sccb_sda = 13;
+            config.pin_sccb_scl = 12;
             config.pin_d7 = 39;
             config.pin_d6 = 36;
             config.pin_d5 = 23;
@@ -81,8 +83,8 @@ camera_config_t OV2640::get_config(CameraModel model) {
             config.pin_pwdn = -1;
             config.pin_reset = -1;
             config.pin_xclk = 15;
-            config.pin_sscb_sda = 4;
-            config.pin_sscb_scl = 5;
+            config.pin_sccb_sda = 4;
+            config.pin_sccb_scl = 5;
             config.pin_d7 = 16;
             config.pin_d6 = 17;
             config.pin_d5 = 18;
@@ -100,8 +102,8 @@ camera_config_t OV2640::get_config(CameraModel model) {
             config.pin_pwdn = -1;
             config.pin_reset = -1;
             config.pin_xclk = 21;
-            config.pin_sscb_sda = 26;
-            config.pin_sscb_scl = 27;
+            config.pin_sccb_sda = 26;
+            config.pin_sccb_scl = 27;
             config.pin_d7 = 35;
             config.pin_d6 = 34;
             config.pin_d5 = 39;
@@ -119,8 +121,8 @@ camera_config_t OV2640::get_config(CameraModel model) {
             config.pin_pwdn = -1;
             config.pin_reset = -1;
             config.pin_xclk = 4;
-            config.pin_sscb_sda = 18;
-            config.pin_sscb_scl = 23;
+            config.pin_sccb_sda = 18;
+            config.pin_sccb_scl = 23;
             config.pin_d7 = 36;
             config.pin_d6 = 37;
             config.pin_d5 = 38;
@@ -138,8 +140,8 @@ camera_config_t OV2640::get_config(CameraModel model) {
             config.pin_pwdn = -1;
             config.pin_reset = 15;
             config.pin_xclk = 27;
-            config.pin_sscb_sda = 25;
-            config.pin_sscb_scl = 23;
+            config.pin_sccb_sda = 25;
+            config.pin_sccb_scl = 23;
             config.pin_d7 = 19;
             config.pin_d6 = 36;
             config.pin_d5 = 18;
@@ -157,8 +159,8 @@ camera_config_t OV2640::get_config(CameraModel model) {
             config.pin_pwdn = -1;
             config.pin_reset = 15;
             config.pin_xclk = 27;
-            config.pin_sscb_sda = 22;
-            config.pin_sscb_scl = 23;
+            config.pin_sccb_sda = 22;
+            config.pin_sccb_scl = 23;
             config.pin_d7 = 19;
             config.pin_d6 = 36;
             config.pin_d5 = 18;
