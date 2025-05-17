@@ -44,9 +44,6 @@ public:
     int getHeight(void);
     framesize_t getFrameSize(void);
     pixformat_t getPixelFormat(void);
-    
-    // 获取内部帧缓冲指针，用于释放等操作
-    camera_fb_t* getFrameBuffer(void) { return fb; }
 
     // 设置帧属性
     void setFrameSize(framesize_t size);

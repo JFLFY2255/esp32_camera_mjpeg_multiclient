@@ -283,10 +283,10 @@ void streamCB(void* pvParameters) {
         uint8_t* jpgBuf = NULL;
         
         // 检查是否需要进行格式转换
-        camera_fb_t *fb = cam.getFrameBuffer();
-        if (fb && fb->format != PIXFORMAT_JPEG && camSize > 0) {
-          bool convert_ok = fmt2jpg((uint8_t*)camBuf, camSize, fb->width, fb->height, 
-                               fb->format, 30, &jpgBuf, &jpgSize);
+        pixformat_t format = cam.getPixelFormat();
+        if (format != PIXFORMAT_JPEG && camSize > 0) {
+          bool convert_ok = fmt2jpg((uint8_t*)camBuf, camSize, cam.getWidth(), cam.getHeight(), 
+                               format, 30, &jpgBuf, &jpgSize);
           
           if (convert_ok && jpgSize > 0) {
             // 发送转换后的JPEG数据
@@ -300,7 +300,12 @@ void streamCB(void* pvParameters) {
             // 释放转换后的JPEG缓冲区
             free(jpgBuf);
           } else {
-            ESP_LOGE(TAG, "格式转换失败，丢弃图片");
+            ESP_LOGE(TAG, "格式转换失败，使用原始数据");
+            // 转换失败，发送原始数据
+            client->write(CTNTTYPE, cntLen);
+            sprintf(buf, "%u\r\n\r\n", camSize);
+            client->write(buf, strlen(buf));
+            client->write((char*)camBuf, (size_t)camSize);
           }
         } else {
           // 已经是JPEG格式或数据无效，直接发送
@@ -343,6 +348,32 @@ void handleJPG(void) {
 
   if (!client.connected()) return;
   cam.run();
+  
+  // 检查是否需要进行格式转换
+  pixformat_t format = cam.getPixelFormat();
+  if (format != PIXFORMAT_JPEG) {
+    size_t jpgSize = 0;
+    uint8_t* jpgBuf = NULL;
+    
+    bool convert_ok = fmt2jpg((uint8_t*)cam.getfb(), cam.getSize(), cam.getWidth(), cam.getHeight(), 
+                         format, 30, &jpgBuf, &jpgSize);
+    
+    if (convert_ok && jpgSize > 0) {
+      // 发送转换后的JPEG数据
+      client.write(JHEADER, jhdLen);
+      client.write((char*)jpgBuf, jpgSize);
+      
+      ESP_LOGI(TAG, "格式转换为JPEG成功: %u -> %u bytes", cam.getSize(), jpgSize);
+      
+      // 释放转换后的JPEG缓冲区
+      free(jpgBuf);
+      return;
+    } else {
+      ESP_LOGE(TAG, "格式转换失败，使用原始数据");
+    }
+  }
+  
+  // 默认或转换失败时，直接发送原始数据
   client.write(JHEADER, jhdLen);
   client.write((char*)cam.getfb(), cam.getSize());
 }
