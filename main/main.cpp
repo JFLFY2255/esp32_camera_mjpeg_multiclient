@@ -11,7 +11,6 @@
 #include "esp_wifi.h"
 #include "esp_sleep.h"
 #include "driver/rtc_io.h"
-#include "web_html.h"  // 添加网页HTML头文件
 // 添加格式转换支持
 #include "img_converters.h"
 
@@ -31,9 +30,6 @@ static const char* TAG = "ESP32_CAM";
 OV2640 cam;
 WebServer server(80);
 
-// 是否启用RGB565模式（如果false则使用JPEG）
-bool useRGB565 = false;
-
 // ===== RTOS任务句柄 =========================
 TaskHandle_t tMjpeg;   // 处理到webserver的客户端连接
 TaskHandle_t tCam;     // 处理从摄像头获取图片帧并本地存储
@@ -46,7 +42,7 @@ SemaphoreHandle_t frameSync = NULL;
 QueueHandle_t streamingClients;
 
 // 我们将尝试实现25 FPS的帧率
-const int FPS = 2;
+const int FPS = 14;
 
 // 我们将每50毫秒（20赫兹）处理一次web客户端请求
 const int WSINTERVAL = 100;
@@ -61,9 +57,6 @@ void streamCB(void* pvParameters);
 void handleJPGSstream(void);
 void handleJPG(void);
 void handleNotFound(void);
-void handleRGB565Stream(void);
-void handleRoot();
-void handleRGB565(void);
 
 // ==== 内存分配器，如果存在PSRAM则利用它 =======================
 char* allocateMemory(char* aPtr, size_t aSize) {
@@ -131,11 +124,8 @@ void mjpegCB(void* pvParameters) {
     APP_CPU);
 
   // 注册webserver处理例程
-  server.on("/jpg", HTTP_GET, handleJPG);
   server.on("/mjpeg/1", HTTP_GET, handleJPGSstream);
-  server.on("/rgb565", HTTP_GET, handleRGB565);
-  server.on("/mrgb565/1", HTTP_GET, handleRGB565Stream);
-  server.on("/", HTTP_GET, handleRoot);
+  server.on("/jpg", HTTP_GET, handleJPG);
   server.onNotFound(handleNotFound);
 
   // 启动webserver
@@ -227,30 +217,10 @@ const char BOUNDARY[] = "\r\n--123456789000000000000987654321\r\n";
 const char CTNTTYPE[] = "Content-Type: image/jpeg\r\nContent-Length: ";
 const int hdrLen = strlen(HEADER);
 const int bdrLen = strlen(BOUNDARY);
+const int cntLen = strlen(CTNTTYPE);
 
 // ==== 处理来自客户端的连接请求 ===============================
 void handleJPGSstream(void) {
-  // 只能容纳10个客户端。限制是WiFi连接的默认值
-  if (!uxQueueSpacesAvailable(streamingClients)) return;
-
-  // 创建一个新的WiFi客户端对象来跟踪这个
-  WiFiClient* client = new WiFiClient();
-  *client = server.client();
-
-  // 立即向此客户端发送标头
-  client->write(HEADER, hdrLen);
-  client->write(BOUNDARY, bdrLen);
-
-  // 将客户端推到流队列
-  xQueueSend(streamingClients, (void*)&client, 0);
-
-  // 唤醒流任务，如果它们之前被挂起：
-  if (eTaskGetState(tCam) == eSuspended) vTaskResume(tCam);
-  if (eTaskGetState(tStream) == eSuspended) vTaskResume(tStream);
-}
-
-// ==== 处理RGB565格式流的请求 ===============================
-void handleRGB565Stream(void) {
   // 只能容纳10个客户端。限制是WiFi连接的默认值
   if (!uxQueueSpacesAvailable(streamingClients)) return;
 
@@ -312,51 +282,34 @@ void streamCB(void* pvParameters) {
         size_t jpgSize = 0;
         uint8_t* jpgBuf = NULL;
         
-        // 如果是RGB565模式，转换为JPEG以便浏览器直接显示
-        if (useRGB565) {
-          // 初始化JPEG质量（0-63，数字越小质量越高）
-          const int jpegQuality = 30;
+        // 检查是否需要进行格式转换
+        camera_fb_t *fb = cam.getFrameBuffer();
+        if (fb && fb->format != PIXFORMAT_JPEG && camSize > 0) {
+          bool convert_ok = fmt2jpg((uint8_t*)camBuf, camSize, fb->width, fb->height, 
+                               fb->format, 30, &jpgBuf, &jpgSize);
           
-          // 假设camBuf包含RGB565数据，进行格式转换
-          if (camBuf != NULL && camSize > 0) {
-            // 获取图像尺寸（需要从摄像头获取实际尺寸）
-            int width = 128;
-            int height = 128;
+          if (convert_ok && jpgSize > 0) {
+            // 发送转换后的JPEG数据
+            client->write(CTNTTYPE, cntLen);
+            sprintf(buf, "%u\r\n\r\n", jpgSize);
+            client->write(buf, strlen(buf));
+            client->write((char*)jpgBuf, jpgSize);
             
-            if (width > 0 && height > 0) {
-              // 使用esp32-camera库中的转换函数进行RGB565到JPEG的转换
-              bool convert_ok = fmt2jpg((uint8_t*)camBuf, camSize, width, height, 
-                                    PIXFORMAT_RGB565, jpegQuality, &jpgBuf, &jpgSize);
-              
-              if (convert_ok && jpgSize > 0) {
-                // 发送转换后的JPEG数据
-                client->write(CTNTTYPE, strlen(CTNTTYPE));
-                sprintf(buf, "%u\r\n\r\n", jpgSize);
-                client->write(buf, strlen(buf));
-                client->write((char*)jpgBuf, jpgSize);
-                
-                ESP_LOGI(TAG, "RGB565转换为JPEG成功: %u -> %u bytes", camSize, jpgSize);
-                
-                // 释放转换后的JPEG缓冲区
-                free(jpgBuf);
-              } else {
-                ESP_LOGE(TAG, "RGB565转JPEG失败，丢弃图片");
-              }
-            } else {
-              ESP_LOGE(TAG, "无法获取图像尺寸，丢弃图片");
-            }
+            ESP_LOGI(TAG, "格式转换为JPEG成功: %u -> %u bytes", camSize, jpgSize);
+            
+            // 释放转换后的JPEG缓冲区
+            free(jpgBuf);
           } else {
-            ESP_LOGE(TAG, "RGB565数据无效，丢弃图片");
+            ESP_LOGE(TAG, "格式转换失败，丢弃图片");
           }
         } else {
-          // 原始JPEG流程
-          client->write(CTNTTYPE, strlen(CTNTTYPE));
+          // 已经是JPEG格式或数据无效，直接发送
+          client->write(CTNTTYPE, cntLen);
           sprintf(buf, "%u\r\n\r\n", camSize);
           client->write(buf, strlen(buf));
           client->write((char*)camBuf, (size_t)camSize);
         }
         
-        // 发送边界，准备下一个帧
         client->write(BOUNDARY, bdrLen);
 
         // 由于此客户端仍然连接，请将其推到末尾
@@ -384,11 +337,6 @@ const char JHEADER[] = "HTTP/1.1 200 OK\r\n" \
                      "Content-type: image/jpeg\r\n\r\n";
 const int jhdLen = strlen(JHEADER);
 
-const char RGBHEADER[] = "HTTP/1.1 200 OK\r\n" \
-                     "Content-disposition: inline; filename=capture.rgb\r\n" \
-                     "Content-type: image/rgb565\r\n\r\n";
-const int rgbhdLen = strlen(RGBHEADER);
-
 // ==== 提供一个JPEG帧 =============================================
 void handleJPG(void) {
   WiFiClient client = server.client();
@@ -396,21 +344,6 @@ void handleJPG(void) {
   if (!client.connected()) return;
   cam.run();
   client.write(JHEADER, jhdLen);
-  client.write((char*)cam.getfb(), cam.getSize());
-}
-
-// ==== 提供一个RGB565帧 ==========================================
-void handleRGB565(void) {
-  WiFiClient client = server.client();
-
-  if (!client.connected()) return;
-  
-  // 获取一帧
-  cam.run();
-  
-  // 发送图像数据
-  client.write(RGBHEADER, rgbhdLen);
-  ESP_LOGI(TAG, "RGB565发送数据大小: %u", cam.getSize());
   client.write((char*)cam.getfb(), cam.getSize());
 }
 
@@ -425,11 +358,6 @@ void handleNotFound() {
   message += server.args();
   message += "\n";
   server.send(200, "text / plain", message);
-}
-
-// 提供网页HTML
-void handleRoot() {
-  server.send(200, "text/html", html);
 }
 
 // ESP-IDF应用程序入口点
@@ -462,7 +390,6 @@ extern "C" void app_main() {
     Serial.println("未找到PSRAM，使用DRAM");
     config.fb_location = CAMERA_FB_IN_DRAM;
   }
-  useRGB565 = config.pixel_format == PIXFORMAT_RGB565;
   
   #if defined(CAMERA_MODEL_ESP_EYE)
   pinMode(13, INPUT_PULLUP);
@@ -489,17 +416,9 @@ extern "C" void app_main() {
   ip = WiFi.localIP();
   Serial.println(F("WiFi已连接"));
   Serial.println("");
-  Serial.print("流: http://");
-  Serial.println(ip);
-  if(useRGB565) { 
-    Serial.print("RGB565图: http://");
-    Serial.print(ip);
-    Serial.println("/rgb565");
-  } else {
-    Serial.print("JPEG图: http://");
-    Serial.print(ip);
-    Serial.println("/jpg");
-  }
+  Serial.print("流链接: http://");
+  Serial.print(ip);
+  Serial.println("/mjpeg/1");
   
   // 启动主流RTOS任务
   xTaskCreatePinnedToCore(
